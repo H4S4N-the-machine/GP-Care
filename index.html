@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>দোকানের হিসাব খাতা</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Baloo+Da+2:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="page">
+  <header class="page-head">
+    <div class="title-row">
+      <h1><span class="brand-mark">📒</span> জিপি কেয়ার সার্ভিস</h1>
+      <p>গ্রামীনফোন কাস্টমার কেয়ার সার্ভিস | ইউনুছ মার্কেট,চন্দনাইশ,চট্টগ্রাম</p>
+    </div>
+    <div class="head-actions">
+      <button class="btn btn-ghost" id="clearAllBtn">Delete All</button>
+    </div>
+  </header>
+
+  <div class="search-bar" id="searchBar">
+    <input type="date" id="searchDateInput" aria-label="তারিখ দিয়ে খুঁজুন">
+    <button class="btn btn-primary" id="searchBtn">🔍 Search</button>
+    <button class="btn btn-ghost" id="clearSearchBtn" style="display:none;">✕ সব তারিখ দেখান</button>
+    <button class="btn btn-primary search-bar-add" id="addDateBtn">+ New Date</button>
+  </div>
+  <p id="searchMessage" class="search-message" style="display:none;"></p>
+
+  <div id="sectionsWrap"><!-- date sections injected by script.js --></div>
+
+  <div id="emptyState" class="empty-state" style="display:none;">
+    <p>এখনো কোনো তারিখের হিসাব যোগ করা হয়নি।</p>
+    <button class="btn btn-primary" id="emptyAddBtn">+ প্রথম তারিখ যোগ করুন</button>
+  </div>
+
+  <p class="save-note">Developed By Hasan | </p>
+</div>
+
+<template id="sectionTemplate">
+  <section class="date-section" data-section-id="">
+    <div class="section-head">
+      <div class="section-meta">
+        <label class="meta-field">
+          <span>DATE</span>
+          <input type="date" class="section-date-input" data-role="date">
+        </label>
+        <label class="meta-field">
+          <span>Starting Balance</span>
+          <input type="text" inputmode="decimal" class="section-balance-input" data-role="balance" placeholder="০">
+        </label>
+      </div>
+      <div class="section-actions">
+        <button class="btn btn-ghost section-add-date" data-role="add-section">+ New Date</button>
+        <button class="section-delete" data-role="delete-section" aria-label="এই তারিখের হিসাব মুছুন">Delete Date ×</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-sl">ক্রম</th>
+            <th class="col-type">সিম টাইপ</th>
+            <th class="col-number">নম্বর</th>
+            <th class="col-num col-price">মূল্য</th>
+            <th class="col-number">রিপ্লেসমেন্ট নম্বর</th>
+            <th class="col-num col-price">রিপ্লেসমেন্ট মূল্য</th>
+            <th class="col-type">পিএল টাইপ</th>
+            <th class="col-number">পিএল নম্বর</th>
+            <th class="col-num col-price">পিএল মূল্য</th>
+            <th class="col-action"></th>
+          </tr>
+        </thead>
+        <tbody data-role="rows-body"><!-- rows injected --></tbody>
+        <tfoot>
+          <tr class="total-row">
+            <td colspan="3">এই তারিখের মোট</td>
+            <td class="col-num" data-role="total-price">৳০</td>
+            <td></td>
+            <td class="col-num" data-role="total-replacementprice">৳০</td>
+            <td colspan="2"></td>
+            <td class="col-num" data-role="total-plprice">৳০</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <button class="btn btn-ghost btn-add-row" data-role="add-row">+ New Entry</button>
+
+    <div class="section-closing">
+      <label class="meta-field">
+        <span>TOTAL PRICE</span>
+        <input type="text" class="section-totaltaka-input" data-role="totalTaka" placeholder="০" readonly>
+      </label>
+      <label class="meta-field">
+        <span>CLOSING BALANCE</span>
+        <input type="text" inputmode="decimal" class="section-closing-input" data-role="closingBalance" placeholder="০">
+      </label>
+    </div>
+  </section>
+</template>
+
+<script src="script.js"></script>
+
+</body>
+</html>
