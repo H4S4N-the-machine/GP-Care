@@ -13,10 +13,13 @@
 <div class="page">
   <header class="page-head">
     <div class="title-row">
-      <h1><span class="brand-mark">📒</span> জিপি কেয়ার সার্ভিস</h1>
-      <p>গ্রামীনফোন কাস্টমার কেয়ার সার্ভিস | ইউনুছ মার্কেট,চন্দনাইশ,চট্টগ্রাম</p>
+      <h1><span class="brand-mark">📒</span> জিপি কেয়ার সার্ভিস</h1>
+      <p>গ্রামীনফোন কাস্টমার কেয়ার সার্ভিস | ইউনুছ মার্কেট,চন্দনাইশ,চট্টগ্রাম</p>
     </div>
     <div class="head-actions">
+      <button class="btn btn-ghost" id="exportBtn">⬇ Export</button>
+      <button class="btn btn-ghost" id="importBtn">⬆ Import</button>
+      <input type="file" id="importFileInput" accept="application/json" style="display:none;">
       <button class="btn btn-ghost" id="clearAllBtn">Delete All</button>
     </div>
   </header>
@@ -40,7 +43,7 @@
 </div>
 
 <template id="sectionTemplate">
-  <section class="date-section" data-section-id="">gidh
+  <section class="date-section" data-section-id="">
     <div class="section-head">
       <div class="section-meta">
         <label class="meta-field">

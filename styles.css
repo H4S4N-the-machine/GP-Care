@@ -35,7 +35,7 @@ body{
 }
 .brand-mark{ font-size:28px; }
 .title-row p{ color:var(--ink-dim); font-size:14px; margin-top:6px; }
-.head-actions{ display:flex; gap:10px; }
+.head-actions{ display:flex; gap:10px; flex-wrap:wrap; }
 
 .btn{
   padding:11px 20px; border-radius:9px; font-family:inherit; font-weight:600;

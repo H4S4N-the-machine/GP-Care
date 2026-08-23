@@ -50,6 +50,7 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
   }
 
   let sections = loadSections();
+  let activeSearchDate = null;
 
   const wrap = document.getElementById('sectionsWrap');
   const emptyState = document.getElementById('emptyState');
@@ -72,18 +73,19 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
     `;
   }
 
- function updateSectionTotals(el, section){
-  const totalPrice = section.rows.reduce((sum, r) => sum + parseNum(r.price), 0);
-  const totalReplacementPrice = section.rows.reduce((sum, r) => sum + parseNum(r.replacementPrice), 0);
-  const totalPl = section.rows.reduce((sum, r) => sum + parseNum(r.plPrice), 0);
-  el.querySelector('[data-role="total-price"]').textContent = bdt(totalPrice);
-  el.querySelector('[data-role="total-replacementprice"]').textContent = bdt(totalReplacementPrice);
-  el.querySelector('[data-role="total-plprice"]').textContent = bdt(totalPl);
+  function updateSectionTotals(el, section){
+    const totalPrice = section.rows.reduce((sum, r) => sum + parseNum(r.price), 0);
+    const totalReplacementPrice = section.rows.reduce((sum, r) => sum + parseNum(r.replacementPrice), 0);
+    const totalPl = section.rows.reduce((sum, r) => sum + parseNum(r.plPrice), 0);
+    el.querySelector('[data-role="total-price"]').textContent = bdt(totalPrice);
+    el.querySelector('[data-role="total-replacementprice"]').textContent = bdt(totalReplacementPrice);
+    el.querySelector('[data-role="total-plprice"]').textContent = bdt(totalPl);
 
-  const totalTaka = totalPrice + totalReplacementPrice + totalPl;
-  section.totalTaka = String(totalTaka);
-  el.querySelector('[data-role="totalTaka"]').value = totalTaka.toLocaleString('en-IN', { maximumFractionDigits: 2 });
-}
+    const totalTaka = totalPrice + totalReplacementPrice + totalPl;
+    section.totalTaka = String(totalTaka);
+    el.querySelector('[data-role="totalTaka"]').value = totalTaka.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+  }
+
   function renderSectionElement(section){
     const frag = template.content.cloneNode(true);
     const el = frag.querySelector('.date-section');
@@ -96,8 +98,6 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
     updateSectionTotals(el, section);
     return el;
   }
-
-  let activeSearchDate = null;
 
   function renderAll(){
     const list = activeSearchDate ? sections.filter(s => s.date === activeSearchDate) : sections;
@@ -225,6 +225,46 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
     renderAll();
   }
 
+  // ---- backup: export current data as a JSON file, or import a previously exported file ----
+  function exportData(){
+    const dataStr = JSON.stringify(sections, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `shop-ledger-backup-${todayStr()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function importData(file){
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      let parsed;
+      try{
+        parsed = JSON.parse(e.target.result);
+      }catch(err){
+        window.alert('ফাইলটি পড়া যায়নি। এটা কি সঠিক ব্যাকআপ (.json) ফাইল?');
+        return;
+      }
+      if(!Array.isArray(parsed)){
+        window.alert('ফাইলের ফরম্যাট ঠিক নেই। এটা কি এই অ্যাপ থেকেই এক্সপোর্ট করা ফাইল?');
+        return;
+      }
+      if(!window.confirm(`এই ফাইল থেকে ${parsed.length}টি তারিখের হিসাব ইমপোর্ট করতে চান?\nবর্তমান সব ডেটা মুছে গিয়ে এটা দিয়ে প্রতিস্থাপিত হবে।`)) return;
+
+      sections = parsed;
+      activeSearchDate = null;
+      document.getElementById('searchDateInput').value = '';
+      saveSections();
+      renderAll();
+      window.alert('সফলভাবে ইমপোর্ট হয়েছে।');
+    };
+    reader.readAsText(file);
+  }
+
   // typing — update the model and (for price fields) the section total,
   // without a full re-render, so the field never loses focus
   wrap.addEventListener('input', (e) => {
@@ -236,7 +276,6 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
     const role = e.target.dataset.role;
     if(role === 'date'){ section.date = e.target.value; saveSections(); return; }
     if(role === 'balance'){ section.balance = e.target.value; saveSections(); return; }
-    if(role === 'totalTaka'){ section.totalTaka = e.target.value; saveSections(); return; }
     if(role === 'closingBalance'){ section.closingBalance = e.target.value; saveSections(); return; }
 
     const field = e.target.dataset.field;
@@ -304,6 +343,15 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
   document.getElementById('clearSearchBtn').addEventListener('click', clearSearch);
   document.getElementById('searchDateInput').addEventListener('keydown', (e) => {
     if(e.key === 'Enter'){ e.preventDefault(); performSearch(); }
+  });
+  document.getElementById('exportBtn').addEventListener('click', exportData);
+  document.getElementById('importBtn').addEventListener('click', () => {
+    document.getElementById('importFileInput').click();
+  });
+  document.getElementById('importFileInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(file) importData(file);
+    e.target.value = '';
   });
 
   renderAll();
