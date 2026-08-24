@@ -7,6 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Baloo+Da+2:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -15,6 +18,7 @@
     <div class="title-row">
       <h1><span class="brand-mark">📒</span> জিপি কেয়ার সার্ভিস</h1>
       <p>গ্রামীনফোন কাস্টমার কেয়ার সার্ভিস | ইউনুছ মার্কেট,চন্দনাইশ,চট্টগ্রাম</p>
+      <p id="syncStatus" class="sync-status">🔄 কানেক্ট হচ্ছে...</p>
     </div>
     <div class="head-actions">
       <button class="btn btn-ghost" id="exportBtn">⬇ Export</button>

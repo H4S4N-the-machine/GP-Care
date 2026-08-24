@@ -35,6 +35,10 @@ body{
 }
 .brand-mark{ font-size:28px; }
 .title-row p{ color:var(--ink-dim); font-size:14px; margin-top:6px; }
+.sync-status{ font-size:12px; font-weight:600; margin-top:8px; }
+.sync-status.synced{ color:var(--accent); }
+.sync-status.syncing{ color:var(--ink-dim); }
+.sync-status.offline{ color:var(--danger); }
 .head-actions{ display:flex; gap:10px; flex-wrap:wrap; }
 
 .btn{

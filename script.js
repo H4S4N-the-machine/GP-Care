@@ -1,5 +1,33 @@
 const STORAGE_KEY = 'shop-ledger-sections-v1';
 
+  // ---- Firebase (cross-device sync) ----
+  const firebaseConfig = {
+    apiKey: "AIzaSyCvwxEkhQtduVr9W0uMSPIbqHziHrFJJKg",
+    authDomain: "gp-care-ledger.firebaseapp.com",
+    databaseURL: "https://gp-care-ledger-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "gp-care-ledger",
+    storageBucket: "gp-care-ledger.firebasestorage.app",
+    messagingSenderId: "1097167603389",
+    appId: "1:1097167603389:web:2266035c0aaf468ca859d4"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const fbAuth = firebase.auth();
+  const fbDb = firebase.database();
+  const ledgerRef = fbDb.ref('ledgerData');
+
+  let lastSyncedJSON = null;   // last JSON we either wrote or received — used to ignore our own echo
+  let fbWriteTimer = null;
+  let fbReady = false;         // becomes true once the first Firebase sync round-trip completes
+
+  function setSyncStatus(state){
+    const el = document.getElementById('syncStatus');
+    if(!el) return;
+    el.classList.remove('synced', 'syncing', 'offline');
+    if(state === 'synced'){ el.textContent = '✅ সব ডিভাইসে সিঙ্ক আছে'; el.classList.add('synced'); }
+    else if(state === 'syncing'){ el.textContent = '🔄 সিঙ্ক হচ্ছে...'; el.classList.add('syncing'); }
+    else if(state === 'offline'){ el.textContent = '⚠️ অফলাইন — শুধু এই ডিভাইসে সেভ হচ্ছে'; el.classList.add('offline'); }
+  }
+
   function loadSections(){
     try{
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
@@ -12,6 +40,50 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
   function saveSections(){
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(sections)); }
     catch(e){}
+
+    if(!fbReady) return; // don't push to the cloud until the initial sync has settled
+    clearTimeout(fbWriteTimer);
+    setSyncStatus('syncing');
+    fbWriteTimer = setTimeout(() => {
+      const json = JSON.stringify(sections);
+      lastSyncedJSON = json;
+      ledgerRef.set(sections)
+        .then(() => setSyncStatus('synced'))
+        .catch(() => setSyncStatus('offline'));
+    }, 600);
+  }
+
+  function initCloudSync(){
+    fbAuth.signInAnonymously().catch(() => setSyncStatus('offline'));
+
+    fbAuth.onAuthStateChanged((user) => {
+      if(!user) return;
+
+      ledgerRef.on('value', (snapshot) => {
+        const remote = snapshot.val();
+
+        if(remote === null){
+          // nothing in the cloud yet — push whatever this device already has (from localStorage)
+          fbReady = true;
+          lastSyncedJSON = JSON.stringify(sections);
+          ledgerRef.set(sections).then(() => setSyncStatus('synced')).catch(() => setSyncStatus('offline'));
+          if(sections.length === 0) addSection();
+          return;
+        }
+
+        const remoteJSON = JSON.stringify(remote);
+        fbReady = true;
+        if(remoteJSON === lastSyncedJSON){
+          setSyncStatus('synced');
+          return; // this is just our own write echoing back — nothing to re-render
+        }
+
+        lastSyncedJSON = remoteJSON;
+        sections = Array.isArray(remote) ? remote : [];
+        renderAll();
+        setSyncStatus('synced');
+      }, () => setSyncStatus('offline'));
+    });
   }
 
   function genId(){
@@ -354,5 +426,5 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
     e.target.value = '';
   });
 
-  renderAll();
-  if(sections.length === 0) addSection();
+  renderAll(); // instant render from local cache while Firebase connects
+  initCloudSync();
