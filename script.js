@@ -31,10 +31,38 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
   function loadSections(){
     try{
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      return Array.isArray(saved) ? saved : [];
+      return normalizeSections(saved);
     }catch(e){
       return [];
     }
+  }
+
+  // makes sure every section/row has the fields the app expects, even if the
+  // saved data is old, partial, or came back from Firebase in an unexpected shape —
+  // prevents the whole app from crashing on one bad entry.
+  function normalizeSections(arr){
+    if(!Array.isArray(arr)) return [];
+    return arr.map(s => {
+      if(!s || typeof s !== 'object') return null;
+      const rows = Array.isArray(s.rows) ? s.rows : [];
+      return {
+        id: s.id || genId(),
+        date: s.date || '',
+        balance: s.balance || '',
+        rows: rows.length ? rows.map(r => ({
+          simType: (r && r.simType) || '',
+          number: (r && r.number) || '',
+          price: (r && r.price) || '',
+          replacementNumber: (r && r.replacementNumber) || '',
+          replacementPrice: (r && r.replacementPrice) || '',
+          plType: (r && r.plType) || '',
+          plNumber: (r && r.plNumber) || '',
+          plPrice: (r && r.plPrice) || ''
+        })) : [emptyRow()],
+        totalTaka: s.totalTaka || '',
+        closingBalance: s.closingBalance || ''
+      };
+    }).filter(Boolean);
   }
 
   function saveSections(){
@@ -79,7 +107,7 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
         }
 
         lastSyncedJSON = remoteJSON;
-        sections = Array.isArray(remote) ? remote : [];
+        sections = normalizeSections(remote);
         renderAll();
         setSyncStatus('synced');
       }, () => setSyncStatus('offline'));
