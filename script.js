@@ -18,6 +18,7 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
   let lastSyncedJSON = null;   // last JSON we either wrote or received — used to ignore our own echo
   let fbWriteTimer = null;
   let fbReady = false;         // becomes true once the first Firebase sync round-trip completes
+  let pendingRemoteRender = false; // true when a remote update arrived while the user was typing
 
   function setSyncStatus(state){
     const el = document.getElementById('syncStatus');
@@ -108,10 +109,19 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
 
         lastSyncedJSON = remoteJSON;
         sections = normalizeSections(remote);
-        renderAll();
+        if(isTypingActive()){
+          pendingRemoteRender = true; // apply once the user leaves the field they're editing
+        } else {
+          renderAll();
+        }
         setSyncStatus('synced');
       }, () => setSyncStatus('offline'));
     });
+  }
+
+  function isTypingActive(){
+    const el = document.activeElement;
+    return !!(el && el.tagName === 'INPUT' && wrap.contains(el));
   }
 
   function genId(){
@@ -155,6 +165,17 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
   const wrap = document.getElementById('sectionsWrap');
   const emptyState = document.getElementById('emptyState');
   const template = document.getElementById('sectionTemplate');
+
+  // once the user leaves the field they were editing, apply any remote update
+  // that arrived while they were typing (so it never yanks focus mid-keystroke)
+  wrap.addEventListener('focusout', () => {
+    setTimeout(() => {
+      if(pendingRemoteRender && !isTypingActive()){
+        pendingRemoteRender = false;
+        renderAll();
+      }
+    }, 80);
+  });
 
   function rowHTML(sectionId, row, idx){
     return `
