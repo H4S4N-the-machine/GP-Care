@@ -160,6 +160,40 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
   }
 
   let sections = loadSections();
+
+  // ---- view-only mode for visitors — only unlocks with the owner PIN ----
+  const EDIT_PIN = "8842"; // change this to your own secret PIN
+  const EDIT_UNLOCK_KEY = 'ledger-edit-unlocked';
+  let editUnlocked = localStorage.getItem(EDIT_UNLOCK_KEY) === 'yes';
+
+  function applyEditMode(){
+    document.body.classList.toggle('view-only', !editUnlocked);
+    const btn = document.getElementById('editModeBtn');
+    if(btn) btn.textContent = editUnlocked ? '🔓 এডিট মোড চালু' : '🔒 এডিট মোড';
+  }
+
+  function tryUnlockEdit(){
+    if(editUnlocked){
+      if(window.confirm('এডিট মোড বন্ধ করে ভিউ-ওনলি মোডে ফিরে যেতে চান?')){
+        editUnlocked = false;
+        localStorage.setItem(EDIT_UNLOCK_KEY, 'no');
+        applyEditMode();
+        renderAll();
+      }
+      return;
+    }
+    const pin = window.prompt('এডিট মোড চালু করতে PIN দিন:');
+    if(pin === null) return;
+    if(pin === EDIT_PIN){
+      editUnlocked = true;
+      localStorage.setItem(EDIT_UNLOCK_KEY, 'yes');
+      applyEditMode();
+      renderAll();
+    } else {
+      window.alert('ভুল PIN।');
+    }
+  }
+
   let activeSearchDate = null;
 
   const wrap = document.getElementById('sectionsWrap');
@@ -178,17 +212,18 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
   });
 
   function rowHTML(sectionId, row, idx){
+    const ro = editUnlocked ? '' : 'readonly';
     return `
       <tr>
         <td class="sl-cell">${idx + 1}</td>
-        <td><input type="text" value="${escapeAttr(row.simType)}" data-section="${sectionId}" data-idx="${idx}" data-field="simType" placeholder="sim name"></td>
-        <td><input type="text" value="${escapeAttr(row.number)}" data-section="${sectionId}" data-idx="${idx}" data-field="number" placeholder="sim number"></td>
-        <td><input type="text" inputmode="decimal" class="num-input" value="${escapeAttr(row.price)}" data-section="${sectionId}" data-idx="${idx}" data-field="price" placeholder="০"></td>
-        <td><input type="text" value="${escapeAttr(row.replacementNumber)}" data-section="${sectionId}" data-idx="${idx}" data-field="replacementNumber" placeholder="replace number"></td>
-        <td><input type="text" inputmode="decimal" class="num-input" value="${escapeAttr(row.replacementPrice)}" data-section="${sectionId}" data-idx="${idx}" data-field="replacementPrice" placeholder="০"></td>
-        <td><input type="text" value="${escapeAttr(row.plType)}" data-section="${sectionId}" data-idx="${idx}" data-field="plType" placeholder="PL type"></td>
-        <td><input type="text" value="${escapeAttr(row.plNumber)}" data-section="${sectionId}" data-idx="${idx}" data-field="plNumber" placeholder="PL number"></td>
-        <td><input type="text" inputmode="decimal" class="num-input" value="${escapeAttr(row.plPrice)}" data-section="${sectionId}" data-idx="${idx}" data-field="plPrice" placeholder="০"></td>
+        <td><input type="text" ${ro} value="${escapeAttr(row.simType)}" data-section="${sectionId}" data-idx="${idx}" data-field="simType" placeholder="sim name"></td>
+        <td><input type="text" ${ro} value="${escapeAttr(row.number)}" data-section="${sectionId}" data-idx="${idx}" data-field="number" placeholder="sim number"></td>
+        <td><input type="text" ${ro} inputmode="decimal" class="num-input" value="${escapeAttr(row.price)}" data-section="${sectionId}" data-idx="${idx}" data-field="price" placeholder="০"></td>
+        <td><input type="text" ${ro} value="${escapeAttr(row.replacementNumber)}" data-section="${sectionId}" data-idx="${idx}" data-field="replacementNumber" placeholder="replace number"></td>
+        <td><input type="text" ${ro} inputmode="decimal" class="num-input" value="${escapeAttr(row.replacementPrice)}" data-section="${sectionId}" data-idx="${idx}" data-field="replacementPrice" placeholder="০"></td>
+        <td><input type="text" ${ro} value="${escapeAttr(row.plType)}" data-section="${sectionId}" data-idx="${idx}" data-field="plType" placeholder="PL type"></td>
+        <td><input type="text" ${ro} value="${escapeAttr(row.plNumber)}" data-section="${sectionId}" data-idx="${idx}" data-field="plNumber" placeholder="PL number"></td>
+        <td><input type="text" ${ro} inputmode="decimal" class="num-input" value="${escapeAttr(row.plPrice)}" data-section="${sectionId}" data-idx="${idx}" data-field="plPrice" placeholder="০"></td>
         <td><button class="row-delete" data-idx="${idx}" aria-label="এই এন্ট্রি মুছুন">×</button></td>
       </tr>
     `;
@@ -211,9 +246,15 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
     const frag = template.content.cloneNode(true);
     const el = frag.querySelector('.date-section');
     el.dataset.sectionId = section.id;
-    el.querySelector('[data-role="date"]').value = section.date || '';
-    el.querySelector('[data-role="balance"]').value = section.balance || '';
-    el.querySelector('[data-role="closingBalance"]').value = section.closingBalance || '';
+    const dateInput = el.querySelector('[data-role="date"]');
+    const balanceInput = el.querySelector('[data-role="balance"]');
+    const closingInput = el.querySelector('[data-role="closingBalance"]');
+    dateInput.value = section.date || '';
+    balanceInput.value = section.balance || '';
+    closingInput.value = section.closingBalance || '';
+    dateInput.disabled = !editUnlocked;
+    balanceInput.readOnly = !editUnlocked;
+    closingInput.readOnly = !editUnlocked;
     const tbody = el.querySelector('[data-role="rows-body"]');
     tbody.innerHTML = section.rows.map((row, idx) => rowHTML(section.id, row, idx)).join('');
     updateSectionTotals(el, section);
@@ -237,8 +278,15 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
       return;
     }
 
+    // show the most recent date first (empty/unset dates sort to the end)
+    const sortedList = [...list].sort((a, b) => {
+      if(!a.date) return 1;
+      if(!b.date) return -1;
+      return b.date.localeCompare(a.date);
+    });
+
     wrap.innerHTML = '';
-    list.forEach(section => wrap.appendChild(renderSectionElement(section)));
+    sortedList.forEach(section => wrap.appendChild(renderSectionElement(section)));
     updateSearchUI();
   }
 
@@ -281,6 +329,7 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
   }
 
   function addSection(){
+    if(!editUnlocked) return;
     activeSearchDate = null;
     document.getElementById('searchDateInput').value = '';
     const section = newSection();
@@ -292,6 +341,7 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
   }
 
   function insertSectionAfter(id){
+    if(!editUnlocked) return;
     activeSearchDate = null;
     document.getElementById('searchDateInput').value = '';
     const idx = sections.findIndex(s => s.id === id);
@@ -308,6 +358,7 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
   }
 
   function deleteSection(id){
+    if(!editUnlocked) return;
     const section = sections.find(s => s.id === id);
     if(!section) return;
     const label = section.date || 'এই তারিখ';
@@ -318,6 +369,7 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
   }
 
   function addRowToSection(id){
+    if(!editUnlocked) return;
     const section = sections.find(s => s.id === id);
     if(!section) return;
     section.rows.push(emptyRow());
@@ -331,6 +383,7 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
   }
 
   function deleteRow(sectionId, idx){
+    if(!editUnlocked) return;
     const section = sections.find(s => s.id === sectionId);
     if(!section) return;
     section.rows.splice(idx, 1);
@@ -339,6 +392,7 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
   }
 
   function clearAll(){
+    if(!editUnlocked) return;
     if(sections.length === 0) return;
     if(!window.confirm('সব তারিখের সব হিসাব মুছে ফেলতে চান? এই কাজটি ফিরিয়ে নেওয়া যাবে না।')) return;
     sections = [];
@@ -361,6 +415,7 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
   }
 
   function importData(file){
+    if(!editUnlocked) return;
     const reader = new FileReader();
     reader.onload = (e) => {
       let parsed;
@@ -389,6 +444,7 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
   // typing — update the model and (for price fields) the section total,
   // without a full re-render, so the field never loses focus
   wrap.addEventListener('input', (e) => {
+    if(!editUnlocked) return;
     const sectionEl = e.target.closest('.date-section');
     if(!sectionEl) return;
     const section = sections.find(s => s.id === sectionEl.dataset.sectionId);
@@ -475,5 +531,8 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
     e.target.value = '';
   });
 
+  document.getElementById('editModeBtn').addEventListener('click', tryUnlockEdit);
+
+  applyEditMode();
   renderAll(); // instant render from local cache while Firebase connects
   initCloudSync();

@@ -199,3 +199,26 @@ tfoot .total-row td{
 }
 
 :focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+/* ---------- VIEW-ONLY MODE (visitors, until the owner unlocks editing) ---------- */
+body.view-only #clearAllBtn,
+body.view-only #importBtn,
+body.view-only .search-bar-add,
+body.view-only .section-add-date,
+body.view-only .section-delete,
+body.view-only .btn-add-row,
+body.view-only .row-delete,
+body.view-only #emptyAddBtn{
+  display:none !important;
+}
+body.view-only input[readonly],
+body.view-only input:disabled{
+  cursor:default;
+  color:var(--ink);
+  opacity:1;
+}
+body.view-only tbody td input:hover{ border-color:transparent; }
+body.view-only .meta-field input:focus,
+body.view-only tbody td input:focus{
+  outline:none; box-shadow:none; border-color:var(--line); background:transparent;
+}
