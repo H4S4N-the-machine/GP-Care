@@ -162,14 +162,14 @@ const STORAGE_KEY = 'shop-ledger-sections-v1';
   let sections = loadSections();
 
   // ---- view-only mode for visitors — only unlocks with the owner PIN ----
-  const EDIT_PIN = "8842"; // change this to your own secret PIN
+  const EDIT_PIN = "5026"; // change this to your own secret PIN
   const EDIT_UNLOCK_KEY = 'ledger-edit-unlocked';
   let editUnlocked = localStorage.getItem(EDIT_UNLOCK_KEY) === 'yes';
 
   function applyEditMode(){
     document.body.classList.toggle('view-only', !editUnlocked);
     const btn = document.getElementById('editModeBtn');
-    if(btn) btn.textContent = editUnlocked ? '🔓 এডিট মোড চালু' : '🔒 এডিট মোড';
+    if(btn) btn.textContent = editUnlocked ? '🔓 READ MOOD' : '🔒 ADMIN CONTROL';
   }
 
   function tryUnlockEdit(){
